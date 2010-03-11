@@ -1,0 +1,4 @@
+MonoTouch version of iPhone SDK i18n helper.
+
+Usage:
+   mono ngenstrings.exe Localization02.exe

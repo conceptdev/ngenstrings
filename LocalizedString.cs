@@ -56,14 +56,16 @@ namespace ngenstrings
 		{
 			get
 			{
-				if (String.IsNullOrEmpty(_table)) 
-					return "Localizable"; // default file name
-				else
-					return _table;
+				if (String.IsNullOrEmpty(_table))
+					return "";
+				else 
+					return _table.Trim(); // return "" if nothing specified, to get default behavior
 			}
 			set { _table = value; }
 		}
-		// public string Bundle {get;set;} // not used
+		[Obsolete("Not supported")]
+		public string Bundle {get;set;} // not used
+
 		public List<string> InMethods = new List<string>();
 		public string InMethodString 
 		{

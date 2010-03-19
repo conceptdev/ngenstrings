@@ -44,6 +44,7 @@
     <Compile Include="ParameterEnum.cs" />
     <Compile Include="LocalizedString.cs" />
     <Compile Include="MethodSignatureCollection.cs" />
+    <Compile Include="LocalizedStringTable.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

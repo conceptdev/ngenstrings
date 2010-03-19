@@ -57,6 +57,9 @@ namespace ngenstrings
 				Console.WriteLine(item);
 			}
 			Console.WriteLine(" - - - - - - - - - - - - - - -");
+
+			var tables = new Dictionary<string, LocalizedStringTable>();
+			tables.Add("", new LocalizedStringTable(DEFAULT_FILE_NAME));
 			var sb = new StringBuilder();
 
 			foreach(TypeDefinition type in assembly.MainModule.Types)
@@ -76,6 +79,16 @@ namespace ngenstrings
 								// output to console for information/debugging
 								Console.WriteLine(locstring.ToString());
 
+								// collect into tables
+								if (!locstring.IsEmpty)
+								{
+									if (!tables.ContainsKey(locstring.Table))
+									{
+										tables.Add(locstring.Table, new LocalizedStringTable(locstring.Table));
+									}
+									tables[locstring.Table].Add(locstring.Key, locstring);
+								}
+
 								if (!locstring.IsEmpty)
 									sb.Append(locstring.ToString());
 
@@ -85,11 +98,16 @@ namespace ngenstrings
 				}
 			}
 
-			WriteStringsFile (DEFAULT_FILE_NAME, sb, assemblyName);
-			Environment.ExitCode =0;
+			// write out all the files
+			var success = true;
+			foreach (var table in tables.Values)
+			{
+				success = success && table.WriteStringsFile(assemblyName);
+			}
+			Environment.ExitCode = success?0:1;
 		}
 		
-		static void WriteStringsFile (string filename, StringBuilder sb, string fromAssemblyName)
+		/*static void WriteStringsFile (string filename, StringBuilder sb, string fromAssemblyName)
 		{
 			filename = CombineFilenameExtension(filename, DEFAULT_FILE_EXTENSION);
 			string s = sb.ToString();
@@ -103,6 +121,6 @@ namespace ngenstrings
 		static string CombineFilenameExtension (string filename, string extension)
 		{
 			return filename + "." + extension;
-		}
+		}*/
 	}
 }

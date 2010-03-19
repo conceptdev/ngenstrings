@@ -5,31 +5,62 @@ using Mono.Cecil.Cil;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+/* The original genstrings works like this; 
+most of these options probably don't make sense for ngengstrings.
 
-namespace mgenstrings
+Usage: genstrings [OPTION] file1.[mc] ... filen.[mc]
+
+Options
+ -j                       sets the input language to Java.
+ -a                       append output to the old strings files.
+ -s substring             substitute 'substring' for NSLocalizedString.
+ -skipTable tablename     skip over the file for 'tablename'.
+ -noPositionalParameters  turns off positional parameter support.
+ -u                       allow unicode characters.
+ -macRoman                read files as MacRoman not UTF-8.
+ -q                       turns off multiple key/value pairs warning.
+ -bigEndian               output generated with big endian byte order.
+ -littleEndian            output generated with little endian byte order.
+ -o dir                   place output files in 'dir'.
+*/
+namespace ngenstrings
 {
 	/// <summary>
 	/// mono ngenstrings.exe Localization02.exe
 	/// </summary>
 	class MainClass
 	{
+		const string DEFAULT_FILE_NAME = "Localizable";
+		const string DEFAULT_FILE_EXTENSION = "strings";
 		public static void Main (string[] args)
 		{
 			if (args.Length == 0)
 			{
-				Console.WriteLine("Usage: mgenstrings assemblyname");
+				Console.WriteLine("Usage: ngenstrings assemblyname");
+				Console.WriteLine("");
 				Environment.ExitCode = 1;
 				return; 
 			}
 			string assemblyName = args[0];
 			AssemblyDefinition assembly = AssemblyFactory.GetAssembly(assemblyName);
+			Console.WriteLine("ngenstrings");
+			Console.WriteLine("Assembly: " + assemblyName);
+			Console.WriteLine("Format: c-style key-value pairs (default)");
+
+			var methods = new MethodSignatureCollection();
+			methods.Add(new MethodSignature("System.String MonoTouch.Foundation.NSBundle::LocalizedString(System.String,System.String,System.String)", new List<Parameter>{Parameter.Key, Parameter.Value, Parameter.Table}));
+			methods.Add(new MethodSignature("System.String Extensions::LocalizedString(MonoTouch.Foundation.NSBundle,System.String,System.String)", new List<Parameter>{Parameter.NSBundleIdentifier, Parameter.Key, Parameter.Comment}));
+			methods.Add(new MethodSignature("System.String Extensions::LocalizedString(MonoTouch.Foundation.NSBundle,System.String,System.String,System.String,System.String)", new List<Parameter>{Parameter.NSBundleIdentifier, Parameter.Key, Parameter.Value, Parameter.Table,Parameter.Comment}));
+
+			Console.WriteLine("Processing these method calls:");
+			foreach (MethodSignature item in methods) {
+				Console.WriteLine(item);
+			}
+			Console.WriteLine(" - - - - - - - - - - - - - - -");
+			var sb = new StringBuilder();
 
 			foreach(TypeDefinition type in assembly.MainModule.Types)
 			{
-				Console.WriteLine(type.FullName);
-
-				var sb = new StringBuilder();
-
 				foreach (MethodDefinition methodDefinition in type.Methods)
 				{
 					for (int i = 0; i < methodDefinition.Body.Instructions.Count; i++)
@@ -37,27 +68,41 @@ namespace mgenstrings
 						Instruction instruction = methodDefinition.Body.Instructions[i];
 						if (instruction.Operand != null)
 						{
-							
-							if (instruction.Operand.ToString() == "System.String MonoTouch.Foundation.NSBundle::LocalizedString(System.String,System.String,System.String)")
+							MethodSignature method = null;
+							if (methods.Matches(instruction.Operand.ToString(), out method))
 							{
+								var locstring = method.Parse (methodDefinition.Body.Instructions, i);
+								locstring.InMethods.Add(methodDefinition.DeclaringType + "." + methodDefinition.Name +"()");
+								// output to console for information/debugging
+								Console.WriteLine(locstring.ToString());
 
-								string text = methodDefinition.Body.Instructions[i-3].Operand as string;
-								string note = methodDefinition.Body.Instructions[i-2].Operand as string;
-								string table = methodDefinition.Body.Instructions[i-1].Operand as string;
-								string output = String.Format("/* {0} */\n\"{1}\" = \"{2}\";\n\n",note, text,text);
-
-								Console.WriteLine(text);
-								sb.Append(output);
+								if (!locstring.IsEmpty)
+									sb.Append(locstring.ToString());
 
 							}
 						}
 					}
-	
 				}
-				string s = sb.ToString();
-				File.AppendAllText("Localized.strings",s, Encoding.UTF8);
 			}
-			Console.WriteLine("File Localized.strings written.");
+
+			WriteStringsFile (DEFAULT_FILE_NAME, sb, assemblyName);
+			Environment.ExitCode =0;
+		}
+		
+		static void WriteStringsFile (string filename, StringBuilder sb, string fromAssemblyName)
+		{
+			filename = CombineFilenameExtension(filename, DEFAULT_FILE_EXTENSION);
+			string s = sb.ToString();
+			File.WriteAllText(filename
+				,LocalizedString.FileHeaderString (fromAssemblyName) 
+				,Encoding.UTF8);
+			File.AppendAllText(filename,s, Encoding.UTF8);
+			Console.WriteLine(String.Format("File '{0}' written.", filename));
+
+		}
+		static string CombineFilenameExtension (string filename, string extension)
+		{
+			return filename + "." + extension;
 		}
 	}
 }

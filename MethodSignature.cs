@@ -53,10 +53,9 @@ namespace ngenstrings
 		public LocalizedString Parse (Mono.Cecil.Cil.InstructionCollection instructions, int positionOfMethod)
 		{
 			var ls = new LocalizedString();
-			var y = "";
 
 			for (int i = 0; i < _parametersReversed.Count; i++) {
-				y = instructions[positionOfMethod - (i+1)].Operand as string;
+				var y = instructions[positionOfMethod - (i+1)].Operand as string;
 
 				switch (_parametersReversed[i])
 				{
@@ -91,7 +90,7 @@ namespace ngenstrings
 		public override string ToString ()
 		{
 			var s = "";
-			Parameters.ForEach( (p) => s = p +", " + s);
+			Parameters.ForEach( (p) => s = p +", " + s); // format and sort correctly
 			return string.Format("   {0} ({1})", ShortName, s.Trim(',',' '));
 		}
 	}

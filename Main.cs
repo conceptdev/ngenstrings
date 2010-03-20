@@ -30,8 +30,9 @@ namespace ngenstrings
 	/// </summary>
 	class MainClass
 	{
+		/// <summary>Localizable</summary>
 		const string DEFAULT_FILE_NAME = "Localizable";
-		const string DEFAULT_FILE_EXTENSION = "strings";
+
 		public static void Main (string[] args)
 		{
 			if (args.Length == 0)
@@ -60,8 +61,8 @@ namespace ngenstrings
 
 			var tables = new Dictionary<string, LocalizedStringTable>();
 			tables.Add("", new LocalizedStringTable(DEFAULT_FILE_NAME));
-			var sb = new StringBuilder();
 
+			// iterate method calls with localizable strings
 			foreach(TypeDefinition type in assembly.MainModule.Types)
 			{
 				foreach (MethodDefinition methodDefinition in type.Methods)
@@ -75,23 +76,32 @@ namespace ngenstrings
 							if (methods.Matches(instruction.Operand.ToString(), out method))
 							{
 								var locstring = method.Parse (methodDefinition.Body.Instructions, i);
-								locstring.InMethods.Add(methodDefinition.DeclaringType + "." + methodDefinition.Name +"()");
-								// output to console for information/debugging
-								Console.WriteLine(locstring.ToString());
-
+								var methstring = methodDefinition.DeclaringType + "." + methodDefinition.Name +"()";
+								locstring.InMethods.Add(methstring);
 								// collect into tables
 								if (!locstring.IsEmpty)
 								{
 									if (!tables.ContainsKey(locstring.Table))
-									{
+									{ // ensure table exists
 										tables.Add(locstring.Table, new LocalizedStringTable(locstring.Table));
 									}
-									tables[locstring.Table].Add(locstring.Key, locstring);
+									if (!tables[locstring.Table].ContainsKey(locstring.Key))
+									{ // add string if it isn't already there
+										tables[locstring.Table].Add(locstring.Key, locstring);
+									}
+									else
+									{ // error if already there, duplicate key (only if value different? or comment too?)
+										var duplocstring = tables[locstring.Table][locstring.Key];
+										Console.WriteLine (String.Format (
+											"Duplicate key \"{0}\" found in {1}; was already in {2} other place/s"
+											, locstring.Key
+											, methstring
+											, duplocstring.InMethods.Count));
+										duplocstring.InMethods.Add(methstring);
+									}
 								}
-
-								if (!locstring.IsEmpty)
-									sb.Append(locstring.ToString());
-
+								// output to console for information/debugging
+								Console.Write(locstring.ToString());
 							}
 						}
 					}
@@ -106,21 +116,5 @@ namespace ngenstrings
 			}
 			Environment.ExitCode = success?0:1;
 		}
-		
-		/*static void WriteStringsFile (string filename, StringBuilder sb, string fromAssemblyName)
-		{
-			filename = CombineFilenameExtension(filename, DEFAULT_FILE_EXTENSION);
-			string s = sb.ToString();
-			File.WriteAllText(filename
-				,LocalizedString.FileHeaderString (fromAssemblyName) 
-				,Encoding.UTF8);
-			File.AppendAllText(filename,s, Encoding.UTF8);
-			Console.WriteLine(String.Format("File '{0}' written.", filename));
-
-		}
-		static string CombineFilenameExtension (string filename, string extension)
-		{
-			return filename + "." + extension;
-		}*/
 	}
 }

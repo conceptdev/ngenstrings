@@ -1,8 +1,10 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-
-// Information about this assembly is defined by the following attributes. 
-// Change them to the values specific to your project.
+// Apple's genstrings doco here:
+// http://developer.apple.com/mac/library/DOCUMENTATION/Darwin/Reference/ManPages/man1/genstrings.1.html
+// http://developer.apple.com/iphone/library/documentation/iPhone/Conceptual/iPhoneOSProgrammingGuide/ApplicationEnvironment/ApplicationEnvironment.html
+// http://developer.apple.com/mac/library/documentation/MacOSX/Conceptual/BPInternational/Articles/StringsFiles.html
+// http://developer.apple.com/iphone/library/documentation/Cocoa/Conceptual/LoadingResources/Strings/Strings.html#//apple_ref/doc/uid/10000051i-CH6
 
 [assembly: AssemblyTitle("ngenstrings")]
 [assembly: AssemblyDescription("MonoTouch version of iPhone SDK genstrings")]

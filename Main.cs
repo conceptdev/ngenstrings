@@ -37,7 +37,7 @@ namespace ngenstrings
 		{
 			if (args.Length == 0)
 			{
-				Console.WriteLine("Usage: ngenstrings assemblyname");
+				Console.WriteLine("Usage: mono ngenstrings.exe assemblyname.dll");
 				Console.WriteLine("");
 				Environment.ExitCode = 1;
 				return; 
@@ -49,12 +49,16 @@ namespace ngenstrings
 			Console.WriteLine("Format: c-style key-value pairs (default)");
 
 			var methods = new MethodSignatureCollection();
+			methods.Add(new MethodSignature("System.String MonoTouch.Foundation.NSBundle::LocalizedString(System.String,System.String)", new List<Parameter>{Parameter.Key, Parameter.Comment}));
 			methods.Add(new MethodSignature("System.String MonoTouch.Foundation.NSBundle::LocalizedString(System.String,System.String,System.String)", new List<Parameter>{Parameter.Key, Parameter.Value, Parameter.Table}));
-			methods.Add(new MethodSignature("System.String Extensions::LocalizedString(MonoTouch.Foundation.NSBundle,System.String,System.String)", new List<Parameter>{Parameter.NSBundleIdentifier, Parameter.Key, Parameter.Comment}));
-			methods.Add(new MethodSignature("System.String Extensions::LocalizedString(MonoTouch.Foundation.NSBundle,System.String,System.String,System.String,System.String)", new List<Parameter>{Parameter.NSBundleIdentifier, Parameter.Key, Parameter.Value, Parameter.Table,Parameter.Comment}));
+			methods.Add(new MethodSignature("System.String MonoTouch.Foundation.NSBundle::LocalizedString(System.String,System.String,System.String,System.String)", new List<Parameter>{Parameter.Key, Parameter.Value, Parameter.Table, Parameter.Comment}));
+
+			//methods.Add(new MethodSignature("System.String Extensions::LocalizedString(MonoTouch.Foundation.NSBundle,System.String,System.String)", new List<Parameter>{Parameter.NSBundleIdentifier, Parameter.Key, Parameter.Comment}));
+			//methods.Add(new MethodSignature("System.String Extensions::LocalizedString(MonoTouch.Foundation.NSBundle,System.String,System.String,System.String,System.String)", new List<Parameter>{Parameter.NSBundleIdentifier, Parameter.Key, Parameter.Value, Parameter.Table,Parameter.Comment}));
 
 			Console.WriteLine("Processing these method calls:");
-			foreach (MethodSignature item in methods) {
+			foreach (MethodSignature item in methods)
+			{
 				Console.WriteLine(item);
 			}
 			Console.WriteLine(" - - - - - - - - - - - - - - -");

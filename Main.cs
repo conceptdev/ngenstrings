@@ -43,7 +43,8 @@ namespace ngenstrings
 				return; 
 			}
 			string assemblyName = args[0];
-			AssemblyDefinition assembly = AssemblyFactory.GetAssembly(assemblyName);
+			AssemblyDefinition assembly = Mono.Cecil.AssemblyDefinition.ReadAssembly (assemblyName);
+			//AssemblyDefinition assembly = AssemblyFactory.GetAssembly(assemblyName);
 			Console.WriteLine("ngenstrings");
 			Console.WriteLine("Assembly: " + assemblyName);
 			Console.WriteLine("Format: c-style key-value pairs (default)");
@@ -55,6 +56,10 @@ namespace ngenstrings
 
 			//methods.Add(new MethodSignature("System.String Extensions::LocalizedString(MonoTouch.Foundation.NSBundle,System.String,System.String)", new List<Parameter>{Parameter.NSBundleIdentifier, Parameter.Key, Parameter.Comment}));
 			//methods.Add(new MethodSignature("System.String Extensions::LocalizedString(MonoTouch.Foundation.NSBundle,System.String,System.String,System.String,System.String)", new List<Parameter>{Parameter.NSBundleIdentifier, Parameter.Key, Parameter.Value, Parameter.Table,Parameter.Comment}));
+
+			// Example 'custom' extraction for Miguel's TweetStation
+			methods.Add(new MethodSignature("System.String TweetStation.Locale::GetText(System.String)", new List<Parameter>{Parameter.Key}));
+			methods.Add(new MethodSignature("System.String TweetStation.Locale::GetText(System.String, System.Object)", new List<Parameter>{Parameter.Key, Parameter.Ignore}));
 
 			Console.WriteLine("Processing these method calls:");
 			foreach (MethodSignature item in methods)
@@ -71,9 +76,12 @@ namespace ngenstrings
 			{
 				foreach (MethodDefinition methodDefinition in type.Methods)
 				{
+
+					if (methodDefinition.HasBody)
 					for (int i = 0; i < methodDefinition.Body.Instructions.Count; i++)
 					{
 						Instruction instruction = methodDefinition.Body.Instructions[i];
+
 						if (instruction.Operand != null)
 						{
 							MethodSignature method = null;

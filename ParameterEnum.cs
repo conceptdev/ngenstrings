@@ -13,5 +13,6 @@ namespace ngenstrings
 		, Table
 		, Bundle // not used
 		, NSBundleIdentifier // for static methods
+		, Ignore
 	}
 }

@@ -50,7 +50,7 @@ namespace ngenstrings
 
 		}
 
-		public LocalizedString Parse (Mono.Cecil.Cil.InstructionCollection instructions, int positionOfMethod)
+		public LocalizedString Parse (Mono.Collections.Generic.Collection<Instruction> instructions, int positionOfMethod)
 		{
 			var ls = new LocalizedString();
 

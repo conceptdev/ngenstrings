@@ -35,21 +35,42 @@ namespace ngenstrings
 	{
 		/// <summary>Localizable</summary>
 		const string DEFAULT_FILE_NAME = "Localizable";
+		/// <summary>Strings | PList | Xml</summary>
+		static OutputFormat outputFormat = OutputFormat.Strings;
 
 		public static void Main (string[] args)
 		{
 			if (args.Length == 0)
 			{
-				Console.WriteLine("Usage: mono ngenstrings.exe assemblyname.[dll|exe]");
+				Console.WriteLine("Usage: mono ngenstrings.exe assemblyname.[dll|exe] output_format");
 				Console.WriteLine("");
 				Environment.ExitCode = 1;
 				return; 
 			}
 			string assemblyName = args[0];
 			AssemblyDefinition assembly = Mono.Cecil.AssemblyDefinition.ReadAssembly (assemblyName);
-			Console.WriteLine("ngenstrings");
+
+			if (args.Length > 1)
+			{
+				switch (args[1].ToLower())
+				{
+					case "plist":
+					case "propertylist":
+						outputFormat = OutputFormat.PList;
+						break;
+					case "xml":
+					case "custom":
+						outputFormat = OutputFormat.Xml;
+						break;
+					default:
+						outputFormat = OutputFormat.Strings;
+						break;
+				}
+			}
+
+			Console.WriteLine("== ngenstrings 1.2 ==");
 			Console.WriteLine("Assembly: " + assemblyName);
-			Console.WriteLine("Format: c-style key-value pairs (default)");
+			Console.WriteLine("Format: " + outputFormat);
 
 			var methods = new MethodSignatureCollection();
 			methods.Add(new MethodSignature("System.String MonoTouch.Foundation.NSBundle::LocalizedString(System.String,System.String)", new List<Parameter>{Parameter.Key, Parameter.Comment}));
@@ -63,7 +84,7 @@ namespace ngenstrings
 			methods.Add(new MethodSignature("System.String TweetStation.Locale::GetText(System.String)", new List<Parameter>{Parameter.Key}));
 			methods.Add(new MethodSignature("System.String TweetStation.Locale::Format(System.String,System.Object[])", new List<Parameter>{Parameter.Key, Parameter.Ignore}));
 
-			
+			Console.WriteLine(" - - - - - - - - - - - - - - -");
 			Console.WriteLine("Processing these method calls:");
 			foreach (MethodSignature item in methods)
 			{
@@ -129,7 +150,7 @@ namespace ngenstrings
 			var success = true;
 			foreach (var table in tables.Values)
 			{
-				success = success && table.WriteStringsFile(assemblyName);
+				success = success && table.WriteStringsFile(assemblyName, outputFormat);
 			}
 			Environment.ExitCode = success?0:1;
 		}

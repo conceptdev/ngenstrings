@@ -26,8 +26,11 @@ Options
 namespace ngenstrings
 {
 	/// <summary>
-	/// mono ngenstrings.exe Localization02.exe
+	/// Extract strings for translation
 	/// </summary>
+	/// <example>
+	/// mono ngenstrings.exe Localization02.exe
+	/// </example>
 	class MainClass
 	{
 		/// <summary>Localizable</summary>
@@ -37,14 +40,13 @@ namespace ngenstrings
 		{
 			if (args.Length == 0)
 			{
-				Console.WriteLine("Usage: mono ngenstrings.exe assemblyname.dll");
+				Console.WriteLine("Usage: mono ngenstrings.exe assemblyname.[dll|exe]");
 				Console.WriteLine("");
 				Environment.ExitCode = 1;
 				return; 
 			}
 			string assemblyName = args[0];
 			AssemblyDefinition assembly = Mono.Cecil.AssemblyDefinition.ReadAssembly (assemblyName);
-			//AssemblyDefinition assembly = AssemblyFactory.GetAssembly(assemblyName);
 			Console.WriteLine("ngenstrings");
 			Console.WriteLine("Assembly: " + assemblyName);
 			Console.WriteLine("Format: c-style key-value pairs (default)");
@@ -59,8 +61,9 @@ namespace ngenstrings
 
 			// Example 'custom' extraction for Miguel's TweetStation
 			methods.Add(new MethodSignature("System.String TweetStation.Locale::GetText(System.String)", new List<Parameter>{Parameter.Key}));
-			methods.Add(new MethodSignature("System.String TweetStation.Locale::GetText(System.String, System.Object)", new List<Parameter>{Parameter.Key, Parameter.Ignore}));
+			methods.Add(new MethodSignature("System.String TweetStation.Locale::Format(System.String,System.Object[])", new List<Parameter>{Parameter.Key, Parameter.Ignore}));
 
+			
 			Console.WriteLine("Processing these method calls:");
 			foreach (MethodSignature item in methods)
 			{
@@ -76,44 +79,46 @@ namespace ngenstrings
 			{
 				foreach (MethodDefinition methodDefinition in type.Methods)
 				{
-
 					if (methodDefinition.HasBody)
-					for (int i = 0; i < methodDefinition.Body.Instructions.Count; i++)
 					{
-						Instruction instruction = methodDefinition.Body.Instructions[i];
-
-						if (instruction.Operand != null)
+						for (int i = 0; i < methodDefinition.Body.Instructions.Count; i++)
 						{
-							MethodSignature method = null;
-							if (methods.Matches(instruction.Operand.ToString(), out method))
+							Instruction instruction = methodDefinition.Body.Instructions[i];
+	
+							if (instruction.Operand != null)
 							{
-								var locstring = method.Parse (methodDefinition.Body.Instructions, i);
-								var methstring = methodDefinition.DeclaringType + "." + methodDefinition.Name +"()";
-								locstring.InMethods.Add(methstring);
-								// collect into tables
-								if (!locstring.IsEmpty)
+								MethodSignature method = null;
+	
+								if (methods.Matches(instruction.Operand.ToString(), out method))
 								{
-									if (!tables.ContainsKey(locstring.Table))
-									{ // ensure table exists
-										tables.Add(locstring.Table, new LocalizedStringTable(locstring.Table));
+									var locstring = method.Parse (methodDefinition.Body.Instructions, i);
+									var methstring = methodDefinition.DeclaringType + "." + methodDefinition.Name +"()";
+									locstring.InMethods.Add(methstring);
+									// collect into tables
+									if (!locstring.IsEmpty)
+									{
+										if (!tables.ContainsKey(locstring.Table))
+										{ // ensure table exists
+											tables.Add(locstring.Table, new LocalizedStringTable(locstring.Table));
+										}
+										if (!tables[locstring.Table].ContainsKey(locstring.Key))
+										{ // add string if it isn't already there
+											tables[locstring.Table].Add(locstring.Key, locstring);
+										}
+										else
+										{ // error if already there, duplicate key (only if value different? or comment too?)
+											var duplocstring = tables[locstring.Table][locstring.Key];
+											Console.WriteLine (String.Format (
+												"Duplicate key \"{0}\" found in {1}; was already in {2} other place/s"
+												, locstring.Key
+												, methstring
+												, duplocstring.InMethods.Count));
+											duplocstring.InMethods.Add(methstring);
+										}
 									}
-									if (!tables[locstring.Table].ContainsKey(locstring.Key))
-									{ // add string if it isn't already there
-										tables[locstring.Table].Add(locstring.Key, locstring);
-									}
-									else
-									{ // error if already there, duplicate key (only if value different? or comment too?)
-										var duplocstring = tables[locstring.Table][locstring.Key];
-										Console.WriteLine (String.Format (
-											"Duplicate key \"{0}\" found in {1}; was already in {2} other place/s"
-											, locstring.Key
-											, methstring
-											, duplocstring.InMethods.Count));
-										duplocstring.InMethods.Add(methstring);
-									}
+									// output to console for information/debugging
+									Console.Write(locstring.ToString());
 								}
-								// output to console for information/debugging
-								Console.Write(locstring.ToString());
 							}
 						}
 					}

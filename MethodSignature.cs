@@ -50,35 +50,63 @@ namespace ngenstrings
 
 		}
 
+		/// <summary>
+		/// Parse the "string" value of the parameter
+		/// </summary>
 		public LocalizedString Parse (Mono.Collections.Generic.Collection<Instruction> instructions, int positionOfMethod)
 		{
 			var ls = new LocalizedString();
-
-			for (int i = 0; i < _parametersReversed.Count; i++) {
-				var y = instructions[positionOfMethod - (i+1)].Operand as string;
-
-				switch (_parametersReversed[i])
+			string source = "";
+			for (int i = 0; i < _parametersReversed.Count; i++)
+			{
+				Instruction instruction = instructions[positionOfMethod - (i+1)];
+				if ("ldstr" == instruction.OpCode.Name)
 				{
-					case Parameter.NSBundleIdentifier: 
-						break;
-					case Parameter.Key: 
-						ls.Key = y;
-						break;
-					case Parameter.Value: 
-						ls.Value = y;
-						break;
-					case Parameter.Comment: 
-						ls.Comment = y;
-						break;
-					case Parameter.Table:
-						ls.Table = y;
-						break;
-					case Parameter.Bundle:
-						// not supported
-						break;
-					default:
-						throw new NotImplementedException(string.Format("Parameter type {0} not implemented in Parse()",Parameters[i].ToString()));
-						break;
+					source = instruction.Operand as string;
+					switch (_parametersReversed[i])
+					{
+						case Parameter.NSBundleIdentifier: 
+							break;
+						case Parameter.Key: 
+							ls.Key = source;
+							break;
+						case Parameter.Value: 
+							ls.Value = source;
+							break;
+						case Parameter.Comment: 
+							ls.Comment = source;
+							break;
+						case Parameter.Table:
+							ls.Table = source;
+							break;
+						case Parameter.Bundle:
+							// not supported
+							break;
+						case Parameter.Ignore:
+							// ignore
+							break;
+						default:
+							throw new NotImplementedException(string.Format("Parameter type {0} not implemented in Parse()",Parameters[i].ToString()));
+					}
+				}
+				else if ("stelem.ref" == instruction.OpCode.Name)
+				{	// HACK: walk back through IL, looking for the "string" parameter
+					// If I knew more about IL and Cecil then I would do this properly, but for now 
+					// this works with Miguel's TweetStation Locale.Format(string, string[])
+					for (int j = 0; j < 40; j++)
+					{
+						int k = positionOfMethod - (i+1) - j;
+						if (k < 0 || k >= instructions.Count) break;
+						var i1 = instructions[k];
+						if ("InlineString" == i1.OpCode.OperandType.ToString())
+						{
+							source = i1.Operand.ToString();
+							break; // there might be other strings if we keep walking back, use the first one we find
+						}
+					}
+					// HACK: this is hardcoded to use the string as the 'key' (tsk tsk)
+					ls.Key = source;	// TODO: Consider future method signatures with comment or other parameters
+					break;
 				}
 			}
 			return ls;

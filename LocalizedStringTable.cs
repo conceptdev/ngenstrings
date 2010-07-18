@@ -29,7 +29,17 @@ namespace ngenstrings
 		/// </summary>
 		public bool WriteStringsFile (string fromAssemblyName, OutputFormat format)
 		{
+			return WriteStringsFile (fromAssemblyName, format, "");
+		}
+
+		/// <summary>
+		/// TODO: refactor into seperate per-OutputType methods
+		/// </summary>
+		public bool WriteStringsFile (string fromAssemblyName, OutputFormat format, string languageCode)
+		{
 			var filename = CombineFilenameExtension(FileName, DEFAULT_FILE_EXTENSION);
+			if (!String.IsNullOrEmpty(languageCode)) filename = languageCode + "_" + filename;
+
 			switch (format)
 			{
 				case OutputFormat.Strings:
